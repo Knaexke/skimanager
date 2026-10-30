@@ -1,10 +1,11 @@
 // Offline-Cache für die Web-App: einmal geladen, startet das Spiel auch ohne Internet.
 // Bei jeder neuen Version VERSION erhöhen, damit Geräte das Update holen.
-const VERSION = 'skimanager-v1';
+const VERSION = 'skimanager-v2';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(VERSION).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));
+  // cache:'reload' umgeht den HTTP-Cache, damit wirklich die neue Version gespeichert wird
+  e.waitUntil(caches.open(VERSION).then(c => c.addAll(FILES.map(f => new Request(f, { cache:'reload' })))).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', e => {

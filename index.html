@@ -364,6 +364,60 @@ main{padding-bottom:calc(70px + env(safe-area-inset-bottom))}
   .brand h1{font-size:20px}
 }
 .r3-bottom{padding:10px calc(14px + env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom)) calc(14px + env(safe-area-inset-left))}
+#r3c,#r3gl{touch-action:none}
+/* ---- Menü, Spielanleitung, Spielstand-Code, Info-Sprechblase */
+.btn .bi{display:inline-block;line-height:1}
+.tab .ts{display:none}
+.menu-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:8px}
+.opt{border-radius:14px;background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.08);padding:12px 14px;transition:border-color .15s,background .15s}
+.opt b{font-size:14px}
+.opt span{display:block;margin-top:3px;line-height:1.35}
+.opt.on{background:rgba(92,202,255,.12);border-color:rgba(92,202,255,.55)}
+.steps{margin:10px 0 12px;padding-left:20px;line-height:1.5}
+.steps li{margin:6px 0}
+.help details{border:1px solid rgba(255,255,255,.08);border-radius:12px;background:rgba(255,255,255,.03);margin-bottom:8px}
+.help summary{cursor:pointer;list-style:none;padding:12px 14px;font-weight:700;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.help summary::-webkit-details-marker{display:none}
+.help summary::after{content:"+";color:var(--muted);font-weight:400;font-size:18px;line-height:1}
+.help details[open] summary::after{content:"−"}
+.help details > div{padding:0 14px 12px;color:#cfe0f2;font-size:13.5px;line-height:1.55}
+.help ul{margin:4px 0;padding-left:18px}
+.help li{margin:4px 0}
+.codebox{display:block;width:100%;min-height:150px;font:13px/1.4 ui-monospace,Menlo,Consolas,monospace;color:var(--text);background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:10px 12px;resize:vertical;word-break:break-all}
+#tip{position:fixed;z-index:120;left:0;top:0;padding:8px 12px;border-radius:10px;background:rgba(10,24,44,.97);border:1px solid rgba(92,202,255,.45);color:var(--text);font-size:13px;line-height:1.4;box-shadow:0 10px 30px rgba(0,0,0,.45);pointer-events:none;opacity:0;transform:translateY(4px);transition:opacity .15s,transform .15s}
+#tip.show{opacity:1;transform:none}
+.mbox{overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+/* ---- Handy: kompakte Aktionsleiste oben, Tab-Leiste unten, Dialoge als Bottom-Sheet */
+@media (max-width:760px){
+  .hide-phone{display:none !important}
+  .toolbar{backdrop-filter:none;-webkit-backdrop-filter:none;background:rgba(9,20,36,.97)}
+  .actions{flex-wrap:nowrap;gap:6px;padding:8px 12px}
+  .actions .grp{flex:0 0 auto;padding:3px;gap:4px;border-radius:14px}
+  .actions .grp.go{flex:1 1 auto;min-width:0}
+  .actions .spacer{display:none}
+  .actions .grp.tools .btn,.menu-btn{flex:0 0 44px;width:44px;height:44px;padding:0;justify-content:center;font-size:18px}
+  .actions .grp.tools .bl,.menu-btn .bl{display:none}
+  .actions .grp.go .btn{flex:1 1 auto;min-width:0;height:44px;justify-content:center;white-space:nowrap;overflow:hidden}
+  .actions .grp.go .btn.dim{display:none}
+  .tabs{position:fixed;left:0;right:0;bottom:0;z-index:45;display:flex;gap:2px;overflow:visible;
+        padding:5px max(6px,env(safe-area-inset-right)) calc(5px + env(safe-area-inset-bottom)) max(6px,env(safe-area-inset-left));
+        background:rgba(8,18,33,.96);backdrop-filter:blur(18px) saturate(1.3);-webkit-backdrop-filter:blur(18px) saturate(1.3);border-top:1px solid rgba(255,255,255,.08)}
+  .tab{flex:1 1 0;min-width:0;flex-direction:column;justify-content:center;gap:3px;padding:6px 2px 5px;border-radius:12px}
+  .tab .ti{font-size:20px;line-height:1;opacity:.75}
+  .tab .tl{display:none}
+  .tab .ts{display:block;max-width:100%;font-size:10px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tab.active{background:rgba(92,202,255,.13);color:#fff}
+  .tab.active .ti{opacity:1}
+  .tab.active::after{display:none}
+  .tab .cnt{position:absolute;top:1px;left:calc(50% + 6px);font-size:9.5px;line-height:15px;padding:0 5px;background:var(--ice2);color:#fff}
+  main{padding-bottom:calc(96px + env(safe-area-inset-bottom))}
+  #toasts{left:12px;right:12px;bottom:calc(84px + env(safe-area-inset-bottom));align-items:stretch}
+  .toast{max-width:none}
+  .modal{align-items:flex-end;padding:calc(10px + env(safe-area-inset-top)) 0 0}
+  .mbox{max-width:none;max-height:calc(100dvh - 20px - env(safe-area-inset-top));border-radius:22px 22px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom));animation:sheet .22s ease}
+  .codebox{font-size:16px}
+}
+@keyframes sheet{from{transform:translateY(40px);opacity:.4}to{transform:none;opacity:1}}
 </style>
 </head>
 <body>
@@ -393,18 +447,18 @@ main{padding-bottom:calc(70px + env(safe-area-inset-bottom))}
 
   <div class="toolbar">
     <nav class="actions">
-      <div class="grp">
-        <button class="btn" id="btnTrain" data-act="openTraining">🏋️ Training</button>
-        <button class="btn" id="btnMat" data-act="openMaterial">🎿 Material</button>
-        <button class="btn" id="btnLineup" data-act="openLineup">📋 Aufstellung</button>
-        <button class="btn" data-act="tab" data-tab="market">🤝 Transfermarkt</button>
+      <div class="grp tools">
+        <button class="btn" id="btnTrain" data-act="openTraining" aria-label="Training"><span class="bi">🏋️</span><span class="bl">Training</span></button>
+        <button class="btn" id="btnMat" data-act="openMaterial" aria-label="Material"><span class="bi">🎿</span><span class="bl">Material</span></button>
+        <button class="btn" id="btnLineup" data-act="openLineup" aria-label="Aufstellung"><span class="bi">📋</span><span class="bl">Aufstellung</span></button>
+        <button class="btn hide-phone" data-act="tab" data-tab="market"><span class="bi">🤝</span><span class="bl">Transfermarkt</span></button>
       </div>
-      <div class="grp">
-        <button class="btn primary" id="btnStart" data-act="startRace">🏁 Rennen starten</button>
-        <button class="btn" id="btnNext" data-act="next">➡️ Weiter</button>
+      <div class="grp go">
+        <button class="btn primary" id="btnStart" data-act="startRace"><span class="bi">🏁</span><span class="bl">Rennen starten</span></button>
+        <button class="btn" id="btnNext" data-act="next"><span class="bi">➡️</span><span class="bl">Weiter</span></button>
       </div>
       <span class="spacer"></span>
-      <button class="btn danger" data-act="newGame">↺ Neues Spiel</button>
+      <button class="btn menu-btn" data-act="menu" aria-label="Menü"><span class="bi">☰</span><span class="bl">Menü</span></button>
     </nav>
     <nav class="tabs" id="tabs"></nav>
   </div>
@@ -439,6 +493,7 @@ main{padding-bottom:calc(70px + env(safe-area-inset-bottom))}
   </div>
 </div>
 <div id="toasts"></div>
+<input type="file" id="importFile" accept=".json,application/json,text/plain,.txt" data-chg="importFile" hidden>
 
 <!-- Three.js r128 (MIT-Lizenz, © 2010-2021 Three.js Authors) – eingebettet, damit HD-3D offline läuft -->
 <script>
@@ -5807,13 +5862,14 @@ function renderButtons(){
   dim('btnNext', !prep && !mid);
   document.getElementById('btnNext').classList.toggle('primary', !prep && !mid);
   document.getElementById('btnStart').classList.toggle('primary', prep || mid);
-  document.getElementById('btnStart').innerHTML = mid ? '🏁 2. Lauf starten' : '🏁 Rennen starten';
-  document.getElementById('btnNext').innerHTML = state.phase === 'seasonEnd' ? '➡️ Weiter (neue Saison)' : '➡️ Weiter';
+  document.getElementById('btnStart').innerHTML = `<span class="bi">🏁</span><span class="bl">${mid ? '2. Lauf starten' : 'Rennen starten'}</span>`;
+  document.getElementById('btnNext').innerHTML = `<span class="bi">➡️</span><span class="bl">${state.phase === 'seasonEnd' ? 'Weiter (neue Saison)' : 'Weiter'}</span>`;
 }
 const tabsList = () => [['overview','Übersicht'],['team','Mein Team'],['market','Transfermarkt'],['calendar','Kalender'],['standings','Weltcup-Wertung'],['olympia', champOf(state.year) ? champLabel(champOf(state.year)) : 'Olympia & WM'],['results','Ergebnisse']];
 const TAB_IC = { overview:'🏠', team:'👥', market:'🤝', calendar:'📅', standings:'🏆', olympia:'🏅', results:'📊' };
+const TAB_SHORT = { overview:'Start', team:'Team', market:'Markt', calendar:'Kalender', standings:'Wertung', olympia:'Olympia', results:'Ergebnis' };
 function renderTabs(){
-  document.getElementById('tabs').innerHTML = tabsList().map(([k, l]) => `<button class="tab ${ui.tab === k ? 'active' : ''}" data-act="tab" data-tab="${k}" title="${l}"><span class="ti">${k === 'olympia' && champOf(state.year) === 'wm' ? '🌍' : TAB_IC[k]}</span><span class="tl">${l}</span>${k === 'team' ? `<span class="cnt">${team().length}</span>` : ''}</button>`).join('');
+  document.getElementById('tabs').innerHTML = tabsList().map(([k, l]) => `<button class="tab ${ui.tab === k ? 'active' : ''}" data-act="tab" data-tab="${k}" title="${l}"><span class="ti">${k === 'olympia' && champOf(state.year) === 'wm' ? '🌍' : TAB_IC[k]}</span><span class="tl">${l}</span><span class="ts">${k === 'olympia' && champOf(state.year) === 'wm' ? 'WM' : TAB_SHORT[k]}</span>${k === 'team' ? `<span class="cnt">${team().length}</span>` : ''}</button>`).join('');
 }
 function renderMain(){
   const v = { overview:viewOverview, team:viewTeam, market:viewMarket, calendar:viewCalendar, standings:viewStandings, olympia:viewOlympia, results:viewResults }[ui.tab] || viewOverview;
@@ -6248,6 +6304,7 @@ function open3D(ref, startIdx = 0){
   closeModal();
   glDispose();
   Object.assign(R3, { open:true, ref, stop, race, list, courses:{}, glCache:{}, paused:false, hud:{}, speed:state.r3speed || 2, auto:state.r3auto !== false, camMode:state.r3cam || 'follow' });
+  if(TOUCH && !R3.hinted){ R3.hinted = true; setTimeout(() => toast('Tipp: Tippen = Pause · Ziehen = Kamera schwenken · zwei Finger = Zoom', 'ok'), 900); }
   document.getElementById('r3').classList.remove('hidden');
   R3.flakes = Array.from({ length:160 }, () => ({ x:Math.random(), y:Math.random(), r:0.6 + Math.random() * 2.2, v:0.08 + Math.random() * 0.16 }));
   const start = gl => {
@@ -7517,8 +7574,11 @@ function glRender(){
     // fest hinter dem Fahrer; nur die Blickrichtung wird geglättet (kein Zurückfallen bei Tempo)
     if(!R3.camDir) R3.camDir = new T3.Vector3();
     if(snap) R3.camDir.copy(dir); else R3.camDir.lerp(dir, 1 - Math.exp(-dt * 3)).normalize();
-    cam.position.copy(sp).addScaledVector(R3.camDir, -6.2).addScaledVector(_UP, 2.3 + R3.air * 0.004);
-    R3.look.copy(sp).addScaledVector(R3.camDir, 5).addScaledVector(_UP, 0.75);
+    // Touch/Maus: um den Fahrer schwenken (R3.orbit), Kamerahöhe (R3.orbitH) und Abstand (R3.zoom)
+    const oa = R3.orbit || 0, zm = R3.zoom || 1;
+    const od = oa ? R3._e.copy(R3.camDir).applyAxisAngle(_UP, oa) : R3.camDir;
+    cam.position.copy(sp).addScaledVector(od, -6.2 * zm).addScaledVector(_UP, (2.3 + (R3.orbitH || 0)) * zm + R3.air * 0.004);
+    R3.look.copy(sp).addScaledVector(od, 5 * Math.max(0, Math.cos(oa))).addScaledVector(_UP, 0.75);
   }
   R3.camSnap = false;
   if(!S.model) S.P.head.visible = mode !== 'helmet';
@@ -7542,6 +7602,133 @@ function toast(msg, type = ''){
   el.className = 'toast ' + type; el.textContent = msg;
   document.getElementById('toasts').appendChild(el);
   setTimeout(() => el.remove(), 3800);
+}
+
+// ------------------------------------------------------------------ Menü, Spielstand übertragen, Spielanleitung
+// Der Spielstand liegt im localStorage des jeweiligen Geräts/Browsers. Für den Umzug (z. B. Mac → iPhone)
+// gibt es eine JSON-Datei (Teilen-Menü/Download) oder einen komprimierten Text-Code (fflate + Base64).
+const SAVE_FMT = 'skimanager-save';
+function menuHTML(){
+  let kb = 0; try{ kb = Math.round((localStorage.getItem(SAVE_KEY) || '').length / 1024); }catch(e){ /* kein Speicherzugriff */ }
+  const opt = (act, title, sub, on = '') => `<button class="opt ${on}" data-act="${act}"><b>${title}</b><span class="small muted">${sub}</span></button>`;
+  return mhead('☰ Menü') + `<div class="menu">
+    <div class="sec">Spielstand</div>
+    <p class="small muted" style="margin:0 0 8px">${state.teamName} · Saison ${seasonLabel(state.year)} · ${team().length} Fahrer · wird nach jeder Aktion automatisch gespeichert${kb ? ` (${kb} KB)` : ''}.</p>
+    <div class="menu-grid">
+      ${opt('exportSave', '📤 Sichern / teilen', 'Als Datei speichern oder per AirDrop auf ein anderes Gerät schicken')}
+      ${opt('importSave', '📥 Datei laden', 'Eine gesicherte Spielstand-Datei öffnen')}
+      ${opt('copyCode', '📋 Code kopieren', 'Spielstand als Text-Code in die Zwischenablage')}
+      ${opt('pasteCode', '⌨️ Code einfügen', 'Einen kopierten Spielstand-Code laden')}
+    </div>
+    <div class="sec">Einstellungen</div>
+    <div class="menu-grid">
+      ${opt('menuAuto3d', `🎥 3D nach jedem Rennen: ${state.auto3d === false ? 'aus' : 'an'}`, 'Die Läufe deines Teams automatisch in 3D zeigen', state.auto3d === false ? '' : 'on')}
+      ${opt('menuGfx', `✨ HD-3D-Grafik: ${state.r3gl === false ? 'aus' : 'an'}`, 'Aus = einfache Grafik, schont den Akku', state.r3gl === false ? '' : 'on')}
+    </div>
+    <div class="sec">Hilfe</div>
+    <div class="menu-grid">${opt('help', '❓ Spielanleitung', 'Ablauf, Regeln und Bedienung kurz erklärt')}</div>
+    <div class="sec">Neu beginnen</div>
+    <button class="btn danger" data-act="newGame">↺ Neues Spiel</button>
+  </div>`;
+}
+function saveFileName(){
+  return `SkiManager_${String(state.teamName).replace(/[^\wÄÖÜäöüß-]+/g, '_')}_${seasonLabel(state.year).replace('/', '-')}.json`;
+}
+async function exportSave(){
+  save();
+  const name = saveFileName(), json = JSON.stringify({ format:SAVE_FMT, exported:new Date().toISOString(), state });
+  const file = new File([json], name, { type:'application/json' });
+  // iPhone/iPad: Teilen-Menü (In Dateien sichern, AirDrop, Nachrichten …); sonst normaler Download
+  if(navigator.canShare && navigator.canShare({ files:[file] })){
+    try{ await navigator.share({ files:[file], title:'Ski Manager – Spielstand' }); toast('Spielstand geteilt.', 'ok'); return; }
+    catch(e){ if(e && e.name === 'AbortError') return; }
+  }
+  const url = URL.createObjectURL(file), a = document.createElement('a');
+  a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+  toast(`Spielstand gesichert: ${name}`, 'ok');
+}
+function saveCode(){
+  const z = fflate.deflateSync(fflate.strToU8(JSON.stringify(state)), { level:9 });
+  let bin = '';
+  for(let i = 0; i < z.length; i += 0x8000) bin += String.fromCharCode.apply(null, z.subarray(i, i + 0x8000));
+  return 'SKM1:' + btoa(bin);
+}
+async function copySaveCode(){
+  const code = saveCode();
+  try{
+    await navigator.clipboard.writeText(code);
+    toast(`Spielstand-Code kopiert (${Math.round(code.length / 1000)}k Zeichen). Auf dem anderen Gerät: Menü → Code einfügen.`, 'ok');
+  }catch(e){
+    // Ohne Zwischenablage-Zugriff: Code zum manuellen Kopieren anzeigen
+    showModal(mhead('📋 Spielstand-Code') + `<p class="small muted">Markiere den Code und kopiere ihn. Auf dem anderen Gerät: Menü → Code einfügen.</p><textarea class="codebox" readonly>${code}</textarea>`);
+    const ta = document.querySelector('.codebox'); if(ta){ ta.focus(); ta.select(); }
+  }
+}
+function pasteHTML(){
+  return mhead('⌨️ Spielstand-Code einfügen') + `<p class="small muted" style="margin-top:0">Füge den kopierten Code ein (er beginnt mit „SKM1:“) – oder den Inhalt einer Spielstand-Datei.</p>
+    <textarea id="pasteBox" class="codebox" placeholder="SKM1:…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
+    <div class="row" style="justify-content:flex-end;margin-top:12px"><button class="btn" data-act="menu">Zurück</button><button class="btn primary" data-act="pasteLoad">Spielstand laden</button></div>`;
+}
+function parseSave(text){
+  text = String(text || '').trim();
+  let data;
+  if(text.startsWith('SKM1:')){
+    const bin = atob(text.slice(5).replace(/\s+/g, '')), u = new Uint8Array(bin.length);
+    for(let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+    data = JSON.parse(fflate.strFromU8(fflate.inflateSync(u)));
+  } else {
+    data = JSON.parse(text);
+    if(data && data.format === SAVE_FMT) data = data.state;
+  }
+  if(!data || data.v !== 1 || typeof data.year !== 'number' || !Array.isArray(data.pool) || !Array.isArray(data.ai) || !Array.isArray(data.stops)) throw new Error('kein Spielstand');
+  return data;
+}
+function importSave(text){
+  let data;
+  try{ data = parseSave(text); }
+  catch(e){ toast('Das ist kein gültiger Ski-Manager-Spielstand.', 'bad'); return; }
+  if(!confirm(`Spielstand „${data.teamName || 'Team'}“ (Saison ${seasonLabel(data.year)}) laden?\nDein aktueller Spielstand auf diesem Gerät wird ersetzt.`)) return;
+  const backup = state;
+  try{
+    state = data; migrate(); reindex();
+    closeModal(); ui.tab = 'overview'; ui.view = null; ui.welcome = false;
+    save(); render();
+    toast('Spielstand geladen.', 'ok');
+    if(state.phase === 'seasonEnd' && !state.pending.length) setTimeout(() => showModal(seasonSummaryHTML()), 50);
+    else setTimeout(showPending, 60);
+  }catch(e){
+    state = backup; reindex(); render();
+    toast('Spielstand konnte nicht geladen werden.', 'bad');
+  }
+}
+function welcomeHTML(){
+  return mhead('⛷️ Willkommen beim Ski Manager') + `<p style="margin-top:0">Du übernimmst <b>${state.teamName}</b> im alpinen Ski-Weltcup. So startest du:</p>
+    <ol class="steps">
+      <li><b>Hauptsponsor wählen</b> – gleich im Anschluss. Er zahlt pro Rennen und eine Prämie für sein Saisonziel.</li>
+      <li><b>Fahrer verpflichten</b> 🤝 – im Transfermarkt. Pro Rennen starten bis zu 3 Damen und 3 Herren.</li>
+      <li><b>Aufstellung & Taktik</b> 📋 – Starter, Risiko, Wachs und Besichtigung festlegen.</li>
+      <li><b>Rennen starten</b> 🏁 – in 3D zuschauen, Ergebnis ansehen, dann <b>Weiter</b> ➡️.</li>
+    </ol>
+    <p class="small muted">Zwischen den Rennen helfen Training 🏋️, Material 🎿 und Betreuer. Ziel: das Verbandsziel erreichen und das Budget im Plus halten. Alles Weitere steht in der Spielanleitung im Menü ☰.</p>
+    <div class="row" style="justify-content:flex-end;margin-top:14px"><button class="btn" data-act="help">❓ Spielanleitung</button><button class="btn primary" data-act="welcomeGo">Los geht's</button></div>`;
+}
+function helpHTML(){
+  const sec = (t, body, open = false) => `<details ${open ? 'open' : ''}><summary>${t}</summary><div>${body}</div></details>`;
+  return mhead('❓ Spielanleitung') + `<div class="help">
+    ${sec('🎯 Ziel', `Führe dein Team durch die Weltcup-Saisons: Punkte, Preisgeld, Platz im Nationencup und Medaillen bei Olympia und WM. Der Verband setzt jede Saison ein Ziel – wird es zweimal verfehlt, folgt die Entlassung. Halte dein Budget im Plus: Gehälter, Betreuer und Material-Wartung kosten bei jedem Rennen Geld.`, true)}
+    ${sec('🗓️ Ablauf eines Renntags', `<ul><li><b>Aufstellung & Taktik</b> 📋: bis zu 3 Damen und 3 Herren (Olympia/WM: 4, Team-Event: 2).</li><li><b>Rennen starten</b> 🏁. Bei Riesenslalom, Slalom und Kombination pausiert das Rennen nach dem 1. Lauf – du kannst die Taktik für den 2. Lauf ändern. Nur die besten 30 starten im 2. Lauf, in umgekehrter Reihenfolge.</li><li>Ergebnis ansehen (🎥 auch in 3D), dann <b>Weiter</b> ➡️.</li><li>Zwischen den Rennen: Training, Material, Transfers, Betreuer.</li></ul>`)}
+    ${sec('⛷️ Fahrer & Leistung', `Jeder Fahrer hat <b>Tempo</b>, <b>Technik</b> und <b>Ausdauer</b> (0–99), ein <b>Potenzial</b> als Obergrenze und Erfahrung je Disziplin. Abfahrt lebt von Tempo, Slalom von Technik, Ausdauer zählt überall. Schwierige Pisten belohnen Technik, lange Pisten Ausdauer. Dazu kommen Material, Wetter, Form und Müdigkeit. Die vier Kacheln auf jeder Fahrerkarte zeigen den Leistungswert je Disziplin.`)}
+    ${sec('😮‍💨 Müdigkeit, Form & Verletzungen', `Rennen und Training machen müde und kosten Leistung; zwischen den Rennen erholen sich die Fahrer (der Physio beschleunigt das). Gute Ergebnisse stärken die <b>Form</b> 🔥, Stürze schwächen sie. Stürze können zu <b>Verletzungen</b> führen – dann fällt der Fahrer mehrere Rennen aus.`)}
+    ${sec('🏋️ Training, 🎿 Material & 👥 Betreuer', `<b>Training</b> kostet Geld, ist einmal pro Fahrer und Rennen möglich und steigert Erfahrung und passende Grundwerte – je jünger und je weiter vom Potenzial entfernt, desto mehr. <b>Material</b> gibt Boni je Disziplin; der Servicetruck dämpft Wetterpech. Material kostet Wartung und lässt sich wieder verkaufen. <b>Betreuer</b>: Speed- und Technik-Trainer verstärken das Training, der Physio hilft bei Erholung und Verletzungen, der Servicemann beim Wachs.`)}
+    ${sec('🌦️ Wetter & Wachs', `Die Prognose kann am Renntag umschlagen. Wähle das Wachs passend: Kaltwachs bei Neuschnee und Eis, Warmwachs bei Wärme und Nebel, sonst Universal. Mit Servicemann gibt es eine Empfehlung. Schlechtes Wetter erhöht Zufall und Ausfallrisiko.`)}
+    ${sec('🎲 Renntaktik', `<ul><li><b>Risiko</b> je Fahrer: Sicher, Normal oder Attacke – mehr Tempo, aber mehr Ausfälle.</li><li><b>Besichtigung</b> für einen Fahrer bringt etwas Leistung.</li><li><b>Startnummer</b>: Gesetzte Fahrer können früh oder spät starten. Die Piste baut mit jeder Startnummer ab – bei Neuschnee wird sie dagegen schneller.</li></ul>`)}
+    ${sec('🏆 Wertungen & Preisgeld', `Weltcup-Punkte 100-80-60-50-45 … bis Platz 30, Preisgeld ebenfalls bis Platz 30. Es gibt den Gesamtweltcup, Disziplinwertungen und den Nationencup, in dem dein Team als eigene Nation zählt. Beim <b>Weltcup-Finale</b> starten nur die Top 25 jeder Disziplin, Punkte gibt es bis Platz 15. Dazu kommen Parallel-Riesenslalom, Kombination (Super-G + Slalom) und das Team-Event.`)}
+    ${sec('🏅 Olympia & WM', `Olympia findet in den Saisons statt, die 2026, 2030, 2034 … enden, eine WM in den Saisons mit Ende 2027, 2029, 2031 … Starten dürfen nur qualifizierte Fahrer: ein Top-15-Ergebnis im Weltcup <b>oder</b> mindestens 40 Weltcup-Punkte. Medaillen zählen im eigenen Medaillenspiegel und bringen Prämien, aber keine Weltcup-Punkte.`)}
+    ${sec('🤝 Sponsor, Verband & Verträge', `Der <b>Hauptsponsor</b> zahlt pro Rennen und eine Prämie, wenn sein Saisonziel erreicht wird. Der <b>Verband</b> zahlt am Saisonende eine Prämie nach Platz im Nationencup. <b>Verträge</b> laufen aus und müssen verlängert werden, andere Teams versuchen deine Stars abzuwerben. Jede Saison steigen die Kosten um 4 % und die Konkurrenz wird stärker. Fällt dein Budget unter 100.000 €, hilft der Verband zum Saisonstart mit einer Förderung.`)}
+    ${sec('📱 Bedienung am iPhone', `<ul><li>Die Bereiche wechselst du unten über die Tab-Leiste oder durch Wischen nach links/rechts.</li><li>Langes Drücken auf Symbole und Werte zeigt Info-Texte.</li><li>3D-Ansicht: Tippen = Pause, Ziehen = Kamera schwenken, zwei Finger = Zoom, doppelt tippen = Kamera zurücksetzen.</li><li>Spielstand auf ein anderes Gerät bringen: Menü ☰ → Sichern/teilen bzw. Code kopieren.</li></ul>`)}
+  </div>
+  <div class="row" style="justify-content:flex-end;margin-top:12px"><button class="btn primary" data-act="helpClose">Verstanden</button></div>`;
 }
 
 // ------------------------------------------------------------------ Event-Handling (alle Buttons über data-act)
@@ -7616,9 +7803,25 @@ const ACTIONS = {
   r3auto:       () => { R3.auto = !R3.auto; state.r3auto = R3.auto; save(); r3Controls(); },
   r3cam:        () => { const ks = Object.keys(GL_CAMS); R3.camMode = ks[(ks.indexOf(R3.camMode) + 1) % ks.length]; state.r3cam = R3.camMode; R3.camSnap = true; save(); r3Controls(); },
   r3gfx:        () => { state.r3gl = !R3.gl; save(); const idx = R3.idx; close3D(); open3D(R3.ref, idx); },
+  // Menü, Spielstand übertragen, Hilfe
+  menu:         () => showModal(menuHTML()),
+  help:         () => showModal(helpHTML()),
+  helpClose:    () => { closeModal(); if(state.pending.length) showPending(); },
+  welcomeGo:    () => { ui.welcome = false; closeModal(); showPending(); },
+  exportSave:   () => exportSave(),
+  importSave:   () => document.getElementById('importFile').click(),
+  copyCode:     () => copySaveCode(),
+  pasteCode:    () => { showModal(pasteHTML()); const ta = document.getElementById('pasteBox'); if(ta) ta.focus(); },
+  pasteLoad:    () => importSave(document.getElementById('pasteBox').value),
+  menuAuto3d:   () => { state.auto3d = state.auto3d === false; save(); showModal(menuHTML()); },
+  menuGfx:      () => { state.r3gl = state.r3gl === false; save(); showModal(menuHTML()); },
 };
 document.addEventListener('click', e => {
+  if(tipLong){ tipLong = false; e.preventDefault(); return; }   // Klick nach langem Drücken (Info-Text) ignorieren
   if(e.target.id === 'modal'){ closeModal(); return; }
+  if(TOUCH && !e.target.closest('[data-act], a, input, select, textarea, label')){
+    const t = e.target.closest('[title]'); if(t){ showTip(t); return; }
+  }
   const el = e.target.closest('[data-act]');
   if(!el || el.disabled) return;
   const fn = ACTIONS[el.dataset.act];
@@ -7629,6 +7832,10 @@ if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) navigato
 document.addEventListener('change', e => {
   const el = e.target.closest('[data-chg]');
   if(el && el.dataset.chg === 'viewRaceSel'){ const [s, r] = el.value.split(':'); ACTIONS.viewRace({ s, r }); }
+  else if(el && el.dataset.chg === 'importFile'){
+    const f = el.files && el.files[0]; el.value = '';
+    if(f) f.text().then(importSave, () => toast('Die Datei konnte nicht gelesen werden.', 'bad'));
+  }
 });
 document.addEventListener('keydown', e => {
   if(R3.open){
@@ -7641,13 +7848,93 @@ document.addEventListener('keydown', e => {
   }
   if(e.key === 'Escape') closeModal();
 });
-window.addEventListener('resize', () => { if(R3.open) r3Resize(); });
+window.addEventListener('resize', () => { if(R3.open) r3Resize(); hideTip(); });
+
+// ---- Touch-Bedienung (iPhone): Info-Texte (title) als Sprechblase, Wischen zwischen Tabs, 3D-Kamera per Finger
+const TOUCH = matchMedia('(hover: none)').matches;
+let tipLong = false, tipTimer = 0;
+function showTip(el){
+  const txt = el.getAttribute('title'); if(!txt) return;
+  let tip = document.getElementById('tip');
+  if(!tip){ tip = document.createElement('div'); tip.id = 'tip'; tip.setAttribute('role', 'tooltip'); document.body.appendChild(tip); }
+  tip.textContent = txt; tip.style.maxWidth = Math.min(300, innerWidth - 24) + 'px'; tip.classList.add('show');
+  const r = el.getBoundingClientRect(), tw = tip.offsetWidth, th = tip.offsetHeight;
+  let y = r.top - th - 8; if(y < 12) y = r.bottom + 8;
+  tip.style.left = clamp(r.left + r.width / 2 - tw / 2, 12, innerWidth - tw - 12) + 'px';
+  tip.style.top = clamp(y, 12, innerHeight - th - 12) + 'px';
+  clearTimeout(showTip.t); showTip.t = setTimeout(hideTip, 4000);
+}
+function hideTip(){ const t = document.getElementById('tip'); if(t) t.classList.remove('show'); }
+document.addEventListener('touchstart', e => {
+  hideTip(); tipLong = false; clearTimeout(tipTimer);
+  const el = e.target.closest('[title]'); if(!el || e.touches.length > 1) return;
+  tipTimer = setTimeout(() => { tipLong = true; showTip(el); }, 480);   // langes Drücken
+}, { passive:true });
+for(const ev of ['touchmove', 'touchend', 'touchcancel']) document.addEventListener(ev, () => clearTimeout(tipTimer), { passive:true });
+window.addEventListener('scroll', hideTip, { passive:true });
+
+// Wischen nach links/rechts im Inhaltsbereich wechselt den Tab
+(() => {
+  const main = document.getElementById('main');
+  let sx = 0, sy = 0, st = 0, ok = false;
+  main.addEventListener('touchstart', e => {
+    ok = e.touches.length === 1 && !e.target.closest('.tscroll, .prof-wrap, input, textarea, select');
+    if(ok){ sx = e.touches[0].clientX; sy = e.touches[0].clientY; st = performance.now(); }
+  }, { passive:true });
+  main.addEventListener('touchend', e => {
+    if(!ok) return; ok = false;
+    const t = e.changedTouches[0], dx = t.clientX - sx, dy = t.clientY - sy;
+    if(Math.abs(dx) < 70 || Math.abs(dy) > Math.abs(dx) * 0.5 || performance.now() - st > 700) return;
+    const ks = tabsList().map(x => x[0]), i = ks.indexOf(ui.tab), j = i + (dx < 0 ? 1 : -1);
+    if(i >= 0 && j >= 0 && j < ks.length) ACTIONS.tab({ tab:ks[j] });
+  }, { passive:true });
+})();
+
+// 3D-Ansicht: Tippen = Pause, doppelt tippen = Kamera zurücksetzen, Ziehen = Kamera um den Fahrer schwenken
+// (HD-Grafik, Verfolgerkamera), zwei Finger bzw. Mausrad = Zoom
+(() => {
+  const pts = new Map();
+  let moved = false, downT = 0, tapTimer = 0, pinch0 = 0, zoom0 = 1;
+  const resetCam = () => { R3.orbit = 0; R3.orbitH = 0; R3.zoom = 1; };
+  const down = e => {
+    if(!R3.open) return;
+    if(e.target.setPointerCapture) try{ e.target.setPointerCapture(e.pointerId); }catch(err){ /* egal */ }
+    pts.set(e.pointerId, { x:e.clientX, y:e.clientY, x0:e.clientX, y0:e.clientY });
+    if(pts.size === 1){ moved = false; downT = performance.now(); }
+    else if(pts.size === 2){ const [a, b] = [...pts.values()]; pinch0 = Math.hypot(a.x - b.x, a.y - b.y) || 1; zoom0 = R3.zoom || 1; moved = true; }
+  };
+  const move = e => {
+    const p = pts.get(e.pointerId); if(!p) return;
+    const dx = e.clientX - p.x, dy = e.clientY - p.y; p.x = e.clientX; p.y = e.clientY;
+    if(Math.hypot(p.x - p.x0, p.y - p.y0) > 8) moved = true;
+    if(pts.size >= 2){ const [a, b] = [...pts.values()]; R3.zoom = clamp(zoom0 * pinch0 / (Math.hypot(a.x - b.x, a.y - b.y) || 1), 0.45, 2.5); return; }
+    if(!moved || !R3.gl) return;
+    if(R3.camMode !== 'follow'){ R3.camMode = 'follow'; R3.camSnap = true; r3Controls(); }
+    R3.orbit = clamp((R3.orbit || 0) - dx * 0.009, -Math.PI, Math.PI);
+    R3.orbitH = clamp((R3.orbitH || 0) + dy * 0.02, -1.2, 6);
+  };
+  const up = e => {
+    if(!pts.has(e.pointerId)) return;
+    pts.delete(e.pointerId);
+    if(pts.size || moved || performance.now() - downT > 350) return;
+    if(tapTimer){ clearTimeout(tapTimer); tapTimer = 0; resetCam(); toast('Kamera zurückgesetzt.', 'ok'); return; }
+    tapTimer = setTimeout(() => { tapTimer = 0; if(R3.open) ACTIONS.r3pause(); }, 280);
+  };
+  for(const id of ['r3c', 'r3gl']){
+    const cv = document.getElementById(id);
+    cv.addEventListener('pointerdown', down);
+    cv.addEventListener('pointermove', move);
+    cv.addEventListener('pointerup', up);
+    cv.addEventListener('pointercancel', e => pts.delete(e.pointerId));
+    cv.addEventListener('wheel', e => { if(!R3.open) return; e.preventDefault(); R3.zoom = clamp((R3.zoom || 1) * (1 + e.deltaY * 0.0012), 0.45, 2.5); }, { passive:false });
+  }
+})();
 
 // ------------------------------------------------------------------ Start
 if(load()){ reindex(); if(state.phase === 'seasonEnd' && !state.pending.length) setTimeout(() => showModal(seasonSummaryHTML()), 50); }
-else newGame();
+else { newGame(); ui.welcome = true; }   // allererster Start: kurze Einführung vor der Sponsorwahl
 render();
-setTimeout(showPending, 60);   // offene Entscheidungen (Sponsor, Verträge …) direkt anbieten
+setTimeout(() => { if(ui.welcome) showModal(welcomeHTML()); else showPending(); }, 60);   // offene Entscheidungen (Sponsor, Verträge …) direkt anbieten
 </script>
 </body>
 </html>
