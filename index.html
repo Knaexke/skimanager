@@ -6940,7 +6940,7 @@ function glInit(){
       r.outputEncoding = THREE.sRGBEncoding;
       r.toneMapping = THREE.ACESFilmicToneMapping; r.toneMappingExposure = 1.0;
       R3.renderer = r;
-      R3.cam = new THREE.PerspectiveCamera(60, 1, 0.1, 9000);
+      R3.cam = new THREE.PerspectiveCamera(60, 1, 0.2, 9000);
       R3.look = new THREE.Vector3();
       q4tmp = new THREE.Quaternion(); m4tmp = new THREE.Matrix4();
     }
@@ -6979,11 +6979,21 @@ function glBuild(c, race){
   }
   const Wd = { scene, cx, cy, cz, ch, pw, wx, c };
   const G = R ? demGrid() : null;
+  // Mit wachsendem Abstand zur Mittellinie folgt alles einer stärker geglätteten Richtung – sonst
+  // überkreuzen sich die Querlinien in engen Kurven (Streif) und das Netz faltet sich zu Splittern
+  const chS = new Float64Array(N + 2);
+  for(let i = 0; i <= N; i++) chS[i + 1] = chS[i] + ch[i];
+  Wd.hd = (i, lat) => {
+    const k = Math.abs(lat) * 0.5;
+    if(k <= 0.5) return lerpA(ch, i);
+    const lo = clamp(i - k, 0, N), hi = clamp(i + k + 1, 1, N + 1);
+    return (lerpA(chS, hi) - lerpA(chS, lo)) / (hi - lo);
+  };
   // Geländehöhe: Piste eben; daneben echtes Gelände (Streif) bzw. ansteigende, wellige Waldhänge
   Wd.ground = R ? (i, lat) => {
     const yc = lerpA(cy, i), a = Math.abs(lat);
     if(a <= pw) return yc;
-    const h = lerpA(ch, i), yd = demAt(G, lerpA(cx, i) + Math.cos(h) * lat + R.ox, lerpA(cz, i) + Math.sin(h) * lat + R.oz) - R.oy;
+    const h = Wd.hd(i, lat), yd = demAt(G, lerpA(cx, i) + Math.cos(h) * lat + R.ox, lerpA(cz, i) + Math.sin(h) * lat + R.oz) - R.oy;
     const f = Math.min(1, (a - pw) / 14), s = f * f * (3 - 2 * f);
     return yc + (yd - yc) * s;
   } : (i, lat) => {
@@ -6991,7 +7001,7 @@ function glBuild(c, race){
     if(a > pw){ const l = a - pw; y += l * 0.16 + l * l * 0.0016 + (vnoise(i * 0.03 + (lat > 0 ? 50 : 0), l * 0.04) - 0.35) * Math.min(1, l / 12) * 7; }
     return y;
   };
-  Wd.pos = (i, lat, up, out) => { const h = lerpA(ch, i); return out.set(lerpA(cx, i) + Math.cos(h) * lat, Wd.ground(i, lat) + up, lerpA(cz, i) + Math.sin(h) * lat); };
+  Wd.pos = (i, lat, up, out) => { const h = Wd.hd(i, lat); return out.set(lerpA(cx, i) + Math.cos(h) * lat, Wd.ground(i, lat) + up, lerpA(cz, i) + Math.sin(h) * lat); };
   const v3 = new T3.Vector3(), q4 = new T3.Quaternion(), s3 = new T3.Vector3(), m4 = new T3.Matrix4(), yAx = new T3.Vector3(0, 1, 0);
 
   // Licht & Himmel
@@ -7019,12 +7029,12 @@ function glBuild(c, race){
   for(let i = 0; i <= N; i++){ minY = Math.min(minY, cy[i]); mnx = Math.min(mnx, cx[i]); mxx = Math.max(mxx, cx[i]); mnz = Math.min(mnz, cz[i]); mxz = Math.max(mxz, cz[i]); }
   const valley = new T3.Mesh(new T3.PlaneGeometry(40000, 40000).rotateX(-Math.PI / 2), new T3.MeshLambertMaterial({ color:srgb(0xe9eef5) }));
   valley.position.y = minY - 90; valley.receiveShadow = false; scene.add(valley);
-  if(wx.far > 1000 && !R && wx.hdri !== 'lago'){   // Kunstberge nur, wo weder Foto-Alpen noch echtes Gelände zu sehen sind
+  if(wx.far > 1000 && !R && !bgTex){   // Kunstberge nur, wo weder Foto-Alpen noch echtes Gelände zu sehen sind
     const ccx = (mnx + mxx) / 2, ccz = (mnz + mxz) / 2, Rc = Math.hypot(mxx - mnx, mxz - mnz) / 2;
     const horRGB = [horC.r, horC.g, horC.b], mMat = new T3.MeshLambertMaterial({ vertexColors:true, fog:false });
     for(let m = 0; m < 46; m++){
       const a = m / 46 * Math.PI * 2 + rng() * 0.12, dist = Rc + 700 + rng() * 2600, hgt = 450 + rng() * 1300, rad = hgt * (1 + rng() * 0.9);
-      const g = new T3.ConeGeometry(rad, hgt, 16, 10), pa = g.attributes.position, col = new Float32Array(pa.count * 3);
+      const g = new T3.ConeGeometry(rad, hgt, 36, 18), pa = g.attributes.position, col = new Float32Array(pa.count * 3);
       const hz = clamp(0.2 + (dist - Rc) / 4200 * 0.5, 0, 0.75);
       for(let k = 0; k < pa.count; k++){
         let x = pa.getX(k), y = pa.getY(k), z = pa.getZ(k);
@@ -7053,10 +7063,9 @@ function glBuild(c, race){
   const pos = new Float32Array(rows * C * 3), col = new Float32Array(rows * C * 3), uv = new Float32Array(rows * C * 2);
   const PIST = wx.ice ? [0.86, 0.92, 1.0] : [0.97, 0.98, 1.0], OFF = [0.84, 0.89, 0.96], EDGE = c.nets ? [0.98, 0.5, 0.3] : [0.35, 0.55, 0.95];
   for(let i = 0; i < rows; i++){
-    const cs = Math.cos(ch[i]), sn = Math.sin(ch[i]);
     for(let j = 0; j < C; j++){
       const lat = lats[j], a = Math.abs(lat), k = i * C + j;
-      pos[k*3] = cx[i] + cs * lat; pos[k*3+1] = Wd.ground(i, lat); pos[k*3+2] = cz[i] + sn * lat;
+      Wd.pos(i, lat, 0, v3); pos[k*3] = v3.x; pos[k*3+1] = v3.y; pos[k*3+2] = v3.z;
       let cc = a <= pw + 0.01 ? PIST : a <= pw * 1.06 ? EDGE : OFF;
       if(a <= pw + 0.01 && (i === c.FIN || i === c.FIN + 1)) cc = [0.86, 0.13, 0.2];
       if(a <= pw + 0.01 && (i === c.START || i === c.START + 1)) cc = [0.2, 0.42, 0.9];
@@ -7065,16 +7074,27 @@ function glBuild(c, race){
       uv[k*2] = lat / 5; uv[k*2+1] = i * 2 / 5;
     }
   }
+  // Restliche Falten (Kurveninnenseite enger als der Abstand): Punkt, der hinter die vorige Reihe
+  // zurückfiele, auf diese zusammenziehen statt das Dreieck umklappen zu lassen
+  for(let j = 0; j < C; j++) for(let i = 1, last = j; i < rows; i++){
+    const k = i * C + j, fx = Math.sin(ch[i]), fz = -Math.cos(ch[i]);
+    if((pos[k*3] - pos[last*3]) * fx + (pos[k*3+2] - pos[last*3+2]) * fz < 0.05){ pos[k*3] = pos[last*3]; pos[k*3+2] = pos[last*3+2]; }
+    else last = k;
+  }
+  // Was danach noch umgeklappt ist, liegt zwischen zwei richtig orientierten Lagen derselben Falte:
+  // weglassen (sonst dunkle, falsch beleuchtete Splitter)
+  const flipped = (a, b, d) => (pos[b*3+2] - pos[a*3+2]) * (pos[d*3] - pos[a*3]) - (pos[b*3] - pos[a*3]) * (pos[d*3+2] - pos[a*3+2]) < -1e-6;
   const idx = new Uint32Array((rows - 1) * (C - 1) * 6); let ii = 0;
   for(let i = 0; i < rows - 1; i++) for(let j = 0; j < C - 1; j++){
     const a = i * C + j, b = a + 1, d = a + C, e = d + 1;
-    idx[ii++] = a; idx[ii++] = b; idx[ii++] = d; idx[ii++] = b; idx[ii++] = e; idx[ii++] = d;
+    if(!flipped(a, b, d)){ idx[ii++] = a; idx[ii++] = b; idx[ii++] = d; }
+    if(!flipped(b, e, d)){ idx[ii++] = b; idx[ii++] = e; idx[ii++] = d; }
   }
   const tg = new T3.BufferGeometry();
   tg.setAttribute('position', new T3.BufferAttribute(pos, 3));
   tg.setAttribute('color', new T3.BufferAttribute(col, 3));
   tg.setAttribute('uv', new T3.BufferAttribute(uv, 2));
-  tg.setIndex(new T3.BufferAttribute(idx, 1)); tg.computeVertexNormals();
+  tg.setIndex(new T3.BufferAttribute(idx.subarray(0, ii), 1)); tg.computeVertexNormals();
   // Schnee-Material: eigene helle Pistenfarbe + Foto-Normalmap (Körnung) und Rauheit (Poly Haven snow_02)
   const snowMat = new T3.MeshStandardMaterial({ vertexColors:true, map:snowTexture(), roughness:wx.ice ? 0.5 : 1, metalness:0 });
   if(GLA.nor){ snowMat.normalMap = GLA.nor; snowMat.normalScale = new T3.Vector2(0.8, 0.8); }
@@ -7156,7 +7176,7 @@ function glBuild(c, race){
     if(a > (R ? 520 : 88) || a < pw * 1.18 + 1.5 || i < 0 || i > N) return;
     if(i > c.FIN - 14 && a < pw * 2.6) return;
     if(R){   // echtes Gelände: nur dort Bäume, wo laut Karte Wald ist
-      const h = lerpA(ch, i), x = lerpA(cx, i) + Math.cos(h) * lat + R.ox, z = lerpA(cz, i) + Math.sin(h) * lat + R.oz;
+      const h = Wd.hd(i, lat), x = lerpA(cx, i) + Math.cos(h) * lat + R.ox, z = lerpA(cz, i) + Math.sin(h) * lat + R.oz;
       if(!forestAt(x, z, demAt(G, x, z)) && rng() > 0.12) return;
     }
     trees.push([i, lat, s]);
@@ -7247,6 +7267,7 @@ function glBuild(c, race){
         for(let q = 0; q < 11; q++) fans.push([i + (q - 5) * 0.33, lat, FAN_COLS[(q * 3 + st + sp.seed) % FAN_COLS.length], hgt + (lerpA(cy, i) - Wd.ground(i, lat))]);
       }
     } else if(sp.t === 'arch'){
+      if(sp.txt === 'START') i += 6;   // sonst hängt das Banner direkt über der Kamera und ist abgeschnitten
       const h = lerpA(ch, i), pMat = new T3.MeshStandardMaterial({ color:srgb(0x1e2a40), roughness:0.5 });
       for(const sd of [-1, 1]){ const pl = new T3.Mesh(new T3.BoxGeometry(0.7, 6.4, 0.7), pMat); Wd.pos(i, sd * pw * 1.18, 3.2, pl.position); pl.position.y = lerpA(cy, i) + 3.2; pl.castShadow = true; scene.add(pl); }
       const tx = new T3.MeshStandardMaterial({ map:textTex(sp.txt, sp.txt === 'ZIEL' ? '#e23246' : '#286ee0', '#ffffff', 1024, 160, 120), roughness:0.6 });
@@ -7264,12 +7285,19 @@ function glBuild(c, race){
   }
 
   // Schneefontänen & Schneefall (Partikel)
-  const dot = dotTexture(), MAXP = 700;
-  const pg = new T3.BufferGeometry(), pp = new Float32Array(MAXP * 3).fill(-1e5);
-  pg.setAttribute('position', new T3.BufferAttribute(pp, 3));
-  const spray = new T3.Points(pg, new T3.PointsMaterial({ size:0.16, map:dot, transparent:true, depthWrite:false, color:srgb(0xffffff), opacity:0.95 }));
+  const dot = dotTexture(), MAXP = 1400;
+  const pg = new T3.BufferGeometry(), pp = new Float32Array(MAXP * 3).fill(-1e5), pa = new Float32Array(MAXP), ps = new Float32Array(MAXP);
+  pg.setAttribute('position', new T3.BufferAttribute(pp, 3)); pg.setAttribute('alpha', new T3.BufferAttribute(pa, 1)); pg.setAttribute('psize', new T3.BufferAttribute(ps, 1));
+  const spray = new T3.Points(pg, new T3.ShaderMaterial({
+    transparent:true, depthWrite:false,
+    uniforms:{ map:{ value:dot }, scale:{ value:400 }, col:{ value:new T3.Color(0.93, 0.95, 0.98) } },
+    vertexShader:'attribute float alpha; attribute float psize; uniform float scale; varying float vA;' +
+      'void main(){ vec4 mv = modelViewMatrix * vec4(position, 1.0); gl_PointSize = psize * scale / max(0.3, -mv.z); vA = alpha; gl_Position = projectionMatrix * mv; }',
+    fragmentShader:'uniform sampler2D map; uniform vec3 col; varying float vA;' +
+      'void main(){ float a = texture2D(map, gl_PointCoord).a * vA; if(a < 0.01) discard; gl_FragColor = vec4(col, a); }',
+  }));
   spray.frustumCulled = false; scene.add(spray);
-  Wd.spray = { pts:spray, pos:pp, vel:new Float32Array(MAXP * 3), life:new Float32Array(MAXP), next:0, max:MAXP };
+  Wd.spray = { pts:spray, pos:pp, alpha:pa, size:ps, vel:new Float32Array(MAXP * 3), life:new Float32Array(MAXP), lmax:new Float32Array(MAXP), base:new Float32Array(MAXP), next:0, max:MAXP };
   if(wx.flakes){
     const n = wx.flakes, fp = new Float32Array(n * 3);
     for(let k = 0; k < n; k++){ fp[k*3] = (rng() - 0.5) * 80; fp[k*3+1] = rng() * 40 - 15; fp[k*3+2] = (rng() - 0.5) * 80; }
@@ -7503,8 +7531,9 @@ function glSpray(Wd, p, h, sd, n, burst){
   for(let q = 0; q < n; q++){
     const k = S.next; S.next = (S.next + 1) % S.max;
     S.pos[k*3] = p.x + rx * sd * 0.25 + (Math.random() - 0.5) * 0.3; S.pos[k*3+1] = p.y + 0.05 + Math.random() * 0.2; S.pos[k*3+2] = p.z + rz * sd * 0.25 + (Math.random() - 0.5) * 0.3;
-    if(burst){ const a = Math.random() * 6.28, s = 2 + Math.random() * 6; S.vel.set([Math.cos(a) * s, 2 + Math.random() * 5, Math.sin(a) * s], k * 3); S.life[k] = 1.2 + Math.random() * 0.6; }
-    else { const s = 1.5 + Math.random() * 3.5; S.vel.set([-rx * sd * s + (Math.random() - 0.5), 1 + Math.random() * 2.5, -rz * sd * s + (Math.random() - 0.5)], k * 3); S.life[k] = 0.5 + Math.random() * 0.4; }
+    if(burst){ const a = Math.random() * 6.28, s = 2 + Math.random() * 6; S.vel.set([Math.cos(a) * s, 2 + Math.random() * 5, Math.sin(a) * s], k * 3); S.life[k] = 1.2 + Math.random() * 0.6; S.base[k] = 0.2 + Math.random() * 0.25; }
+    else { const s = 1.5 + Math.random() * 3.5; S.vel.set([-rx * sd * s + (Math.random() - 0.5), 1 + Math.random() * 2.5, -rz * sd * s + (Math.random() - 0.5)], k * 3); S.life[k] = 0.5 + Math.random() * 0.4; S.base[k] = 0.07 + Math.random() * 0.12; }
+    S.lmax[k] = S.life[k];
   }
 }
 function glParticles(Wd, dt){
@@ -7512,11 +7541,14 @@ function glParticles(Wd, dt){
   for(let k = 0; k < S.max; k++){
     if(S.life[k] <= 0) continue;
     S.life[k] -= dt;
-    if(S.life[k] <= 0){ S.pos[k*3+1] = -1e5; continue; }
-    S.vel[k*3+1] -= 9.8 * dt;
+    if(S.life[k] <= 0){ S.pos[k*3+1] = -1e5; S.alpha[k] = 0; continue; }
+    const f = S.life[k] / S.lmax[k];   // 1 → 0: Pulver wird größer, lockerer und verschwindet
+    S.alpha[k] = Math.min(1, f * 2.2) * 0.85; S.size[k] = S.base[k] * (1 + (1 - f) * 2.2);
+    S.vel[k*3+1] -= 9.8 * dt; S.vel[k*3] *= 1 - dt * 1.5; S.vel[k*3+2] *= 1 - dt * 1.5;
     S.pos[k*3] += S.vel[k*3] * dt; S.pos[k*3+1] += S.vel[k*3+1] * dt; S.pos[k*3+2] += S.vel[k*3+2] * dt;
   }
-  S.pts.geometry.attributes.position.needsUpdate = true;
+  const ga = S.pts.geometry.attributes; ga.position.needsUpdate = ga.alpha.needsUpdate = ga.psize.needsUpdate = true;
+  S.pts.material.uniforms.scale.value = R3.renderer.domElement.height / 2;
   const F = Wd.flakes;
   if(F){
     const cp = R3.cam.position, wind = Wd.wx.wind || 0.6, fall = Wd.wx.wind ? 1.5 : 2.2;
@@ -7567,7 +7599,7 @@ function glRender(){
   if(S.model){ if(S.model.parent !== S.roll) S.roll.add(S.model); skPose(S, S.tuck, ph); }
   else glPose(S, S.tuck, ph);
   // Schnee
-  if(dt && (R3.phase === 'run' || R3.phase === 'finish') && Math.abs(R3.lean) > 0.22 && R3.air < 5) glSpray(Wd, sp, h + yaw, Math.sign(R3.lean), 3, false);
+  if(dt && (R3.phase === 'run' || R3.phase === 'finish') && Math.abs(R3.lean) > 0.22 && R3.air < 5) glSpray(Wd, sp, h + yaw, Math.sign(R3.lean), 5, false);
   if(R3.burst){ R3.burst = false; glSpray(Wd, sp, h, 0, 160, true); }
   glParticles(Wd, dt);
   // Flaggen im Wind
@@ -7601,6 +7633,18 @@ function glRender(){
     const od = oa ? R3._e.copy(R3.camDir).applyAxisAngle(_UP, oa) : R3.camDir;
     cam.position.copy(sp).addScaledVector(od, -6.2 * zm).addScaledVector(_UP, (2.3 + (R3.orbitH || 0)) * zm + R3.air * 0.004);
     R3.look.copy(sp).addScaledVector(od, 5 * Math.max(0, Math.cos(oa))).addScaledVector(_UP, 0.75);
+    // Nicht in den Hang tauchen: Kamera und Sichtlinie zum Fahrer über dem Gelände halten
+    // (Übergang steil → flach, Kuppen, seitliches Schwenken). Hoch sofort, runter weich.
+    const hd = lerpA(Wd.ch, p), ox = cam.position.x - sp.x, oz = cam.position.z - sp.z;
+    const fw = (ox * Math.sin(hd) - oz * Math.cos(hd)) / 2, lo = ox * Math.cos(hd) + oz * Math.sin(hd), eye = sp.y + 1.2;
+    let need = cam.position.y;
+    for(let t = 0.25; t < 1.01; t += 0.25){
+      const g = Wd.ground(clamp(p + fw * t, 0, c.N), lat + lo * t) + (t > 0.9 ? 1.1 : 0.6);
+      need = Math.max(need, eye + (g - eye) / t);
+    }
+    const lift = need - cam.position.y;
+    R3.camLift = snap || !(R3.camLift >= 0) || lift > R3.camLift ? lift : R3.camLift + (lift - R3.camLift) * (1 - Math.exp(-dt * 2.5));
+    cam.position.y += R3.camLift;
   }
   R3.camSnap = false;
   if(!S.model) S.P.head.visible = mode !== 'helmet';
