@@ -1,6 +1,6 @@
 // Offline-Cache für die Web-App: einmal geladen, startet das Spiel auch ohne Internet.
 // Bei jeder neuen Version VERSION erhöhen, damit Geräte das Update holen.
-const VERSION = 'skimanager-v2';
+const VERSION = 'skimanager-v3';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png'];
 
 self.addEventListener('install', e => {

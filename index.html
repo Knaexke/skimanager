@@ -141,7 +141,7 @@ button.chip:disabled{cursor:default;opacity:.6}
 @keyframes tin{from{transform:translateY(8px);opacity:0}to{transform:none;opacity:1}}
 .empty{padding:30px;text-align:center;color:var(--muted)}
 .hint{background:rgba(92,202,255,.08);border:1px dashed rgba(92,202,255,.45);border-radius:12px;padding:12px 14px}
-.neg{color:var(--bad)} .pos{color:var(--ok)} .goldt{color:var(--gold)}
+.neg{color:var(--bad)} .pos{color:var(--ok)} .goldt{color:var(--gold)} span.warn{color:var(--warn)}
 #toasts{z-index:100}
 /* ---- 3D-Rennansicht ---- */
 .r3{position:fixed;inset:0;z-index:90;background:#0a1524;overflow:hidden}
@@ -213,7 +213,8 @@ h1,h2,h3,.val,.stat .val{font-family:"SF Pro Display",system-ui,-apple-system,"S
 .actions{padding:10px 24px 8px;gap:10px;align-items:center}
 .actions .grp{display:flex;gap:6px;flex-wrap:wrap;padding:4px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06)}
 .btn{border-radius:11px;padding:8px 13px;font-weight:650;background:rgba(30,58,94,.6);border-color:rgba(255,255,255,.08)}
-.btn:hover{background:rgba(44,82,130,.75);border-color:rgba(92,202,255,.55)}
+@media (hover:hover){.btn:not(:disabled):not(.primary):not(.gold):hover{background:rgba(44,82,130,.75);border-color:rgba(92,202,255,.55)}}
+.btn.gold:hover{background:linear-gradient(135deg,#ffe08a,#e8b232);border-color:transparent}
 .btn.primary{background:linear-gradient(135deg,#6fd6ff,#2f8ff0);color:#032038;box-shadow:0 6px 18px rgba(47,143,240,.35)}
 .btn.gold{box-shadow:0 6px 18px rgba(224,169,42,.3)}
 .btn.dim{opacity:.4;filter:saturate(.4)}
@@ -240,12 +241,12 @@ button.chip.sel.dchip::before{background:#0b1626;box-shadow:none}
 table{font-size:13px}
 th{position:sticky;top:0;background:rgba(18,38,64,.98);z-index:1}
 tbody tr:nth-child(even) td, table tr:nth-child(even) td{background:rgba(255,255,255,.015)}
-tr:hover td{background:rgba(92,202,255,.05)}
-tr.ours td{background:linear-gradient(90deg,rgba(92,202,255,.18),rgba(92,202,255,.06))}
-.pos{display:inline-grid;place-items:center;min-width:24px;height:22px;padding:0 5px;border-radius:7px;font-weight:800;font-size:12px;background:rgba(255,255,255,.06);color:var(--muted)}
-.pos.p1{background:linear-gradient(135deg,#ffe082,#e0a92a);color:#3a2700}
-.pos.p2{background:linear-gradient(135deg,#eef3f8,#aab6c4);color:#24303d}
-.pos.p3{background:linear-gradient(135deg,#f0b07a,#b86b30);color:#2c1606}
+@media (hover:hover){table tr:hover td{background:rgba(92,202,255,.05)}}
+table tr.ours td{background:linear-gradient(90deg,rgba(92,202,255,.18),rgba(92,202,255,.06))}
+.rk{display:inline-grid;place-items:center;min-width:24px;height:22px;padding:0 5px;border-radius:7px;font-weight:800;font-size:12px;background:rgba(255,255,255,.06);color:var(--muted)}
+.rk.p1{background:linear-gradient(135deg,#ffe082,#e0a92a);color:#3a2700}
+.rk.p2{background:linear-gradient(135deg,#eef3f8,#aab6c4);color:#24303d}
+.rk.p3{background:linear-gradient(135deg,#f0b07a,#b86b30);color:#2c1606}
 
 /* Nächstes Rennen: Hero mit Streckenprofil */
 .race-hero{position:relative;overflow:hidden;border-color:color-mix(in srgb,var(--dc) 35%,rgba(255,255,255,.07))}
@@ -4505,7 +4506,7 @@ const AI_MAT = 3;                 // Materialwert der Konkurrenz in der ersten S
 // Wirtschaft über die Karriere: Kosten steigen jedes Jahr, die Konkurrenz rüstet auf,
 // Material verschleißt, und vom Preisgeld behält das Team nur einen Anteil – je größer der Ruf,
 // desto mehr fordern die Stars für sich (86 % bei Spielstart, 65 % an der Spitze)
-const prizeShare = () => 1 - Math.min(0.35, (state.rep || 40) / 285);
+const prizeShare = () => 1 - Math.min(0.35, (state.rep ?? 40) / 285);
 const seasonsPlayed = () => Math.max(0, state.year - START_YEAR);
 const costMult = () => 1 + 0.04 * seasonsPlayed();                       // +4 % Kosten pro Saison
 const aiMat = () => Math.min(10, AI_MAT + 1.4 * seasonsPlayed());        // Werksmaterial der Konkurrenz
@@ -4673,11 +4674,23 @@ let IDX = {};   // id → Fahrer (Schnellzugriff, wird nicht gespeichert)
 const ui = { tab:'overview', wcG:'W', wcD:'tot', view:null, tr:{ rider:null, disc:'DH', int:'hard' }, lu:null, modal:null, hireYears:{} };
 
 function reindex(){ IDX = {}; for(const r of state.pool) IDX[r.id] = r; for(const r of state.ai) IDX[r.id] = r; }
-function save(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }catch(e){ /* Speichern nicht möglich (z. B. privater Modus) */ } }
+function save(){
+  try{ localStorage.setItem(SAVE_KEY, JSON.stringify(state)); ui.saveFailed = false; return true; }
+  catch(e){   // Speichern nicht möglich (privater Modus, Speicher voll) – einmal deutlich warnen
+    if(!ui.saveFailed){ ui.saveFailed = true; setTimeout(() => toast('⚠️ Spielstand kann nicht gespeichert werden – sichere ihn über Menü ☰ → Sichern/teilen.', 'bad'), 0); }
+    return false;
+  }
+}
 function load(){
   try{
     const s = localStorage.getItem(SAVE_KEY); if(!s) return false;
-    const o = JSON.parse(s); if(!o || o.v !== 1) return false;
+    let o = null;
+    try{ o = JSON.parse(s); }catch(e){ o = null; }
+    if(!o || o.v !== 1 || !Array.isArray(o.pool) || !Array.isArray(o.ai) || !Array.isArray(o.stops)){
+      // unlesbar: Kopie aufheben, damit der neue Spielstand die Karriere nicht unwiederbringlich überschreibt
+      try{ localStorage.setItem(SAVE_KEY + '_defekt', s); }catch(e){ /* kein Platz */ }
+      ui.loadFailed = true; return false;
+    }
     state = o; migrate(); return true;
   }catch(e){ return false; }
 }
@@ -5035,12 +5048,14 @@ function startRace(){
   if(state.pending.length){ toast('Bitte zuerst die offenen Entscheidungen treffen.', 'warn'); showPending(); return; }
   const si = curStopIdx(); if(si < 0) return;
   const stop = state.stops[si], race = curRace(), rIdx = stop.races.indexOf(race), d = race.disc, D = DISC[d];
-  if(!team().length){ toast('Du hast noch keine Fahrer – verpflichte zuerst welche im Transfermarkt.', 'warn'); ui.tab = 'market'; render(); return; }
+  if(!team().length && state.budget >= Math.min(...state.pool.filter(r => !r.inTeam).map(r => hireFee(r, 1)), Infinity)){
+    toast('Du hast noch keine Fahrer – verpflichte zuerst welche im Transfermarkt.', 'warn'); ui.tab = 'market'; render(); return;
+  }
   let lineup = validLineup(stop, race);
   // Ohne (gültige) eigene Starter kann das Rennen trotzdem ausgetragen werden – sonst hinge die Saison fest
   const short = D.team ? (lineup.filter(r => r.g === 'W').length < 2 || lineup.filter(r => r.g === 'M').length < 2) : !lineup.length;
   if(short){
-    const why = D.team ? 'Für das Team-Event brauchst du 2 Damen und 2 Herren.' : stop.olympic ? 'Keiner deiner Fahrer ist qualifiziert bzw. aufgestellt.' : stop.finale && DKEYS.includes(d) ? 'Keiner deiner aufgestellten Fahrer ist in den Top 25.' : 'Keine (gültige) Aufstellung.';
+    const why = !team().length ? 'Du hast keine Fahrer und kannst dir gerade keinen Transfer leisten.' : D.team ? 'Für das Team-Event brauchst du 2 Damen und 2 Herren.' : stop.olympic ? 'Keiner deiner Fahrer ist qualifiziert bzw. aufgestellt.' : stop.finale && DKEYS.includes(d) ? 'Keiner deiner aufgestellten Fahrer ist in den Top 25.' : 'Keine (gültige) Aufstellung.';
     if(!confirm(`${why}\n\nRennen ohne eigene Starter austragen?\n(Abbrechen = Aufstellung bearbeiten)`)){ openLineup(); return; }
     lineup = [];
   }
@@ -5056,7 +5071,7 @@ function startRace(){
     const res = simTeam(stop, race, lineup);
     mid.teams = res.teams.map(t => ({ t:t.t, o:t.o, pl:t.pl, W:t.W, M:t.M, duels:t.duels || [] }));
     for(const g of ['W','M']){
-      mid.ents[g] = res.teams.flatMap(t => t[g].map(id => ({ id, o:t.o, runs:res.times[id] ? [res.times[id]] : [], dnf:res.times[id] ? 0 : 1, dnq:0, pl:t.pl, tot:res.times[id] || null, team:t.t })));
+      mid.ents[g] = res.teams.flatMap(t => t[g].map(id => ({ id, o:t.o, runs:res.times[id] ? [res.times[id]] : [], dnf:res.times[id] || !(t.duels || []).length ? 0 : 1, dnq:0, pl:t.pl, tot:res.times[id] || null, team:t.t })));
     }
     finishRace(); return;
   }
@@ -5079,7 +5094,8 @@ function startRace(){
   if(D.runs === 2){   // Pause nach dem 1. Lauf: Taktik für den 2. Lauf festlegen
     state.phase = 'midrace'; ui.view = null; ui.tab = 'results';
     addLog(`${stopTag(stop)}<b>${D.name} ${stop.place}</b> – 1. Lauf beendet. Taktik für den 2. Lauf festlegen.`);
-    save(); render(); return;
+    if(document.activeElement && document.activeElement.blur) document.activeElement.blur();
+    save(); render(); window.scrollTo(0, 0); return;
   }
   finishRace();
 }
@@ -5165,7 +5181,7 @@ function finishRace(){
   state.mid = null;
   state.phase = 'results';
   ui.view = null; ui.tab = 'results';
-  save(); render();
+  save(); render(); window.scrollTo(0, 0);
   if(state.auto3d !== false && ourRes.length) open3D(state.last);   // Rennen deiner Fahrer in 3D zeigen
 }
 // Nach dem Rennen: Form, Verletzungen (Heilung + neue), Müdigkeit
@@ -5229,7 +5245,7 @@ function next(){
     } else if(stop.finale) toast(`🏁 Weltcup-Finale in ${stop.place} – nur die Top 25 jeder Disziplin starten.`, 'ok');
     else toast(`Weiter nach ${stop.place}.`);
   }
-  save(); render();
+  save(); render(); window.scrollTo(0, 0);
   showPending();
 }
 
@@ -5278,9 +5294,9 @@ function resolvePending(){ state.pending.shift(); save(); render(); if(!showPend
 
 // Sponsorangebote: sicher / ausgewogen / riskant, skaliert mit dem Ruf des Teams
 function sponsorOffers(){
-  const k = 0.85 + (state.rep || 40) / 100 * 0.35, R = x => Math.round(x * k / 1000) * 1000;
+  const k = 0.85 + (state.rep ?? 40) / 100 * 0.35, R = x => Math.round(x * k / 1000) * 1000;
   const champ = champOf(state.year), names = [...SPONSOR_NAMES].sort(() => Math.random() - 0.5);
-  const hard = (state.rep || 40) >= 65;
+  const hard = (state.rep ?? 40) >= 65;
   return [
     { name:names[0], style:'Sicherheit', perRace:R(14000), bonus:R(100000), goal:{ type:'top10', target:hard ? 10 : 6, txt:`${hard ? 10 : 6} Top-10-Ergebnisse` } },
     { name:names[1], style:'Ausgewogen', perRace:R(10000), bonus:R(260000), goal:{ type:'podiums', target:hard ? 5 : 3, txt:`${hard ? 5 : 3} Podestplätze` } },
@@ -5297,7 +5313,7 @@ function sponsorProgress(sp = state.sponsor){
 function makeGoal(){
   const last = state.history && state.history.length ? state.history[state.history.length - 1].rank : 10;
   // ein bis zwei Plätze Luft zum Vorjahr, bei hohem Ruf etwas strenger – aber nie strenger als "Top 3"
-  const rank = clamp(last + 2 - ((state.rep || 40) >= 70 ? 1 : 0), 3, 10);
+  const rank = clamp(last + 2 - ((state.rep ?? 40) >= 70 ? 1 : 0), 3, 10);
   return { rank, medal:!!champOf(state.year) };
 }
 
@@ -5322,6 +5338,7 @@ function renewRider(id, y){
     state.budget -= c; r.contract = y; r.salary = calcSalary(r);
     addLog(`✍️ ${r.name} verlängert um ${y} Jahr${y > 1 ? 'e' : ''} (Handgeld ${fmtMoney(c)}, Gehalt ${fmtMoney(r.salary)}/Rennen).`);
   } else {
+    if(!confirm(`${r.name} gehen lassen?\nEine spätere Rückholung kostet die volle Ablöse (${fmtMoney(hireFee(r, 1))}).`)) return;
     r.inTeam = false; r.salary = calcSalary(r); state.lineup = state.lineup.filter(x => x !== id);
     addLog(`👋 ${r.name} verlässt das Team (Vertrag ausgelaufen).`);
   }
@@ -5466,7 +5483,8 @@ function hire(id, years = 2){
   if(team().length >= TEAM_MAX){ toast(`Maximal ${TEAM_MAX} Fahrer im Team.`, 'warn'); return; }
   const c = hireFee(r, years);
   if(state.budget < c){ toast('Nicht genug Budget für diese Ablöse.', 'bad'); return; }
-  state.budget -= c; r.inTeam = true; r.trained = false; r.fatigue = 0; r.contract = years; r.salary = calcSalary(r);
+  // in der Saisonpause zählt der Saisonwechsel nicht als Vertragsjahr
+  state.budget -= c; r.inTeam = true; r.trained = false; r.fatigue = 0; r.contract = years + (state.phase === 'seasonEnd' ? 1 : 0); r.salary = calcSalary(r);
   // automatisch in die Aufstellung, falls noch Platz ist
   const stop = state.stops[curStopIdx()], race = curRace();
   const cnt = validLineup(stop, race).filter(x => x.g === r.g).length;
@@ -5477,6 +5495,7 @@ function hire(id, years = 2){
 }
 function release(id){
   const r = IDX[id]; if(!r || !r.inTeam) return;
+  if(state.phase === 'midrace' && state.mid && state.mid.lineup.includes(id)){ toast(`${r.name} fährt gerade – entlassen erst nach dem Rennen.`, 'warn'); return; }
   const refund = Math.round(r.fee * 0.25);
   if(!confirm(`${r.name} wirklich entlassen? Du erhältst ${fmtMoney(refund)} zurück.`)) return;
   r.inTeam = false; state.budget += refund; r.salary = calcSalary(r);
@@ -5486,6 +5505,7 @@ function release(id){
 }
 function downgradeStaff(id){
   const lv = state.staff[id] || 0, s = STAFF.find(x => x.id === id); if(!lv) return;
+  if(!confirm(`${s.name} auf Stufe ${lv - 1} reduzieren?\nSpart ${fmtMoney(staffSalary(lv) - staffSalary(lv - 1))} pro Rennen – die Einstellungskosten sind verloren.`)) return;
   state.staff[id] = lv - 1;
   addLog(`${s.icon} ${s.name} auf Stufe ${lv - 1} reduziert – spart ${fmtMoney(staffSalary(lv) - staffSalary(lv - 1))} pro Rennen.`);
   toast(`${s.name} → Stufe ${lv - 1}`, 'ok'); save(); render();
@@ -5493,6 +5513,7 @@ function downgradeStaff(id){
 function sellMaterial(id){
   const m = MATERIAL.find(x => x.id === id), lv = state.equip[id] || 0; if(!lv) return;
   const back = Math.round(matCost(m, lv - 1) * 0.4 / 1000) * 1000;
+  if(!confirm(`${m.name}: Stufe ${lv} verkaufen?\nDu bekommst nur ${fmtMoney(back)} (40 %) zurück – neu kaufen kostet ${fmtMoney(matCost(m, lv - 1))}.`)) return;
   state.equip[id] = lv - 1; state.budget += back;
   addLog(`🎿 ${m.name} auf Stufe ${lv - 1} verkauft (+${fmtMoney(back)}, weniger Wartung).`);
   toast(`${m.name} verkauft: +${fmtMoney(back)}`, 'ok'); save(); render(); showModal(materialHTML());
@@ -5733,7 +5754,8 @@ function gameoverHTML(){
 }
 
 function seasonSummaryHTML(){
-  const rank = teamRank(), pts = state.nations.TEAM || 0, bonus = fedBonus(rank), champ = champOf(state.year);
+  const rank = teamRank(), pts = state.nations.TEAM || 0, champ = champOf(state.year);
+  const bonus = Math.round(fedBonus(rank) * (goalStatus().ok ? 1 : 0.4));   // wie in startNewSeason()
   const top = (g, k) => standingsList(g, k)[0];
   const globe = (g, k) => { const t = top(g, k); return t ? `${t.r.inTeam ? '⭐ ' : ''}${t.r.name} <span class="muted">(${t.v})</span>` : '–'; };
   const rows = ['tot', ...DKEYS].map(k => `<tr><td>${k === 'tot' ? '🏆 Gesamtweltcup' : '🔮 ' + DISC[k].name}</td><td>${globe('W', k)}</td><td>${globe('M', k)}</td></tr>`).join('');
@@ -5741,8 +5763,8 @@ function seasonSummaryHTML(){
   const m = state.medals.TEAM, sp = state.sponsor, prog = sponsorProgress(), gs = goalStatus(), g = state.goal;
   return mhead(`🏁 Saisonbilanz ${seasonLabel(state.year)}`) + `
     <div class="grid g2e">
-      <div class="card"><h3>Nationencup</h3><h2>Platz ${rank}</h2><div class="muted">${pts} Punkte · Verbandsprämie <span class="pos">+${fmtMoney(bonus)}</span></div></div>
-      <div class="card"><h3>Verbandsziel</h3><h2 class="${gs.ok ? 'pos' : 'neg'}">${gs.ok ? 'erreicht' : 'verfehlt'}</h2><div class="muted">Top ${g.rank} im Nationencup${g.medal ? ' + 1 Medaille' : ''}${gs.ok ? '' : state.strikes >= 1 ? ' · <b class="neg">zweite Verwarnung droht die Entlassung!</b>' : ' · erste Verwarnung'}</div></div>
+      <div class="card"><h3>Nationencup</h3><h2>Platz ${rank}</h2><div class="muted">${pts} Punkte · Verbandsprämie <span class="pos">+${fmtMoney(bonus)}</span>${goalStatus().ok ? '' : ' <span class="small">(nur 40 % – Ziel verfehlt)</span>'}</div></div>
+      <div class="card"><h3>Verbandsziel</h3><h2 class="${gs.ok ? 'pos' : 'neg'}">${gs.ok ? 'erreicht' : 'verfehlt'}</h2><div class="muted">Top ${g.rank} im Nationencup${g.medal ? ' + 1 Medaille' : ''}${gs.ok ? '' : state.strikes >= 1 ? ' · <b class="neg">zweite Verwarnung – der Verband entlässt dich!</b>' : ' · erste Verwarnung (beim nächsten Mal droht die Entlassung)'}</div></div>
       ${sp ? `<div class="card"><h3>Sponsor ${sp.name}</h3><h2 class="${prog.ok ? 'pos' : 'neg'}">${prog.ok ? '+' + fmtMoney(sp.bonus) : 'keine Prämie'}</h2><div class="muted">Ziel: ${sp.goal.txt} (${prog.v})</div></div>` : ''}
       ${champ ? `<div class="card"><h3>${champLabel(champ)}</h3><span class="medal G">G</span> ${m ? m.g : 0} &nbsp; <span class="medal S">S</span> ${m ? m.s : 0} &nbsp; <span class="medal B">B</span> ${m ? m.b : 0}</div>` : ''}
     </div>
@@ -5789,7 +5811,7 @@ function riderCard(r, mode){
 const DCOL = { DH:'#ff6b5a', SG:'#ffa94d', GS:'#4dabf7', SL:'#51cf66', AK:'#cc5de8', PGS:'#22b8cf', TEAM:'#fcc419' };
 const NAT_COL = { AUT:['#e8424f','#8f1a28'], SUI:['#ff5a5f','#a8121f'], NOR:['#3c6fd8','#b3243a'], ITA:['#2fae63','#c93636'], FRA:['#2f6fd8','#c9303f'],
   USA:['#2f5fbf','#c8303d'], SLO:['#2f6fd8','#36a3d8'], CAN:['#e8424f','#a8121f'], SWE:['#2f7fd8','#d9a51c'], GER:['#444a55','#d39b1c'], CZE:['#2f5fbf','#c93636'], CRO:['#c93636','#2f5fbf'] };
-const posCell = n => n ? `<span class="pos ${n <= 3 ? 'p' + n : ''}">${n}</span>` : '<span class="pos">–</span>';
+const posCell = n => n ? `<span class="rk ${n <= 3 ? 'p' + n : ''}">${n}</span>` : '<span class="rk">–</span>';
 const barLv = v => v >= 88 ? 'lv4' : v >= 80 ? 'lv3' : v >= 70 ? 'lv2' : 'lv1';
 const fmtInt = n => Math.round(n).toLocaleString('de-DE');
 function avatar(r, sm = false){
@@ -5930,7 +5952,7 @@ function viewOverview(){
       : `<button class="chip dchip ${r.disc === d ? 'sel' : ''}" style="--dc:${DCOL[r.disc]}" data-act="selDisc" data-d="${r.disc}" ${state.phase !== 'prep' ? 'disabled' : ''}>${DISC[r.disc].name}</button>`).join(' ');
     const lu = validLineup(stop, race);
     const val = r => Math.round(ratingFor(r, race, true) + raceExtras(r, stop, race, true) + RISK[state.rd.risk[r.id] || 'norm'].s);
-    const luRows = lu.length ? `<table>${lu.map(r => `<tr><td><span class="row" style="gap:8px;flex-wrap:nowrap">${avatar(r, true)}${flag(r.nat)} ${r.name}</span></td><td class="muted">${gName(r.g)}</td><td>${RISK[state.rd.risk[r.id] || 'norm'].icon}</td><td class="num">Müdigkeit ${Math.round(r.fatigue)}</td><td class="num"><b>${val(r)}</b></td></tr>`).join('')}</table>`
+    const luRows = lu.length ? `<div class="tscroll"><table><tr><th>Fahrer · Risiko</th><th class="num" title="Müdigkeit">💤</th><th class="num" title="Erwartete Leistung inkl. Taktik">Wert</th></tr>${lu.map(r => `<tr><td><span class="row" style="gap:8px;flex-wrap:nowrap">${avatar(r, true)}${flag(r.nat)} ${r.name} <span class="muted">${r.g === 'W' ? '♀' : '♂'} ${RISK[state.rd.risk[r.id] || 'norm'].icon}</span></span></td><td class="num">${Math.round(r.fatigue)}</td><td class="num"><b>${val(r)}</b></td></tr>`).join('')}</table></div>`
       : `<div class="small muted">Noch keine (gültige) Aufstellung. ${stop.olympic ? 'Bei Großereignissen dürfen nur qualifizierte Fahrer starten.' : ''}</div>`;
     const kind = stop.olympic ? `<span class="chip goldc">${stopTag(stop)}${champLong(stop.champ)} · keine WC-Punkte</span>` : stop.finale ? '<span class="chip goldc">🏁 Weltcup-Finale · Top 25, Punkte nur bis Platz 15</span>' : D.event ? `<span class="chip">Zusatzwettbewerb · ${D.team ? 'zählt für den Nationencup' : 'zählt für den Gesamtweltcup'}</span>` : '<span class="chip">Weltcup</span>';
     const fmt = D.team ? 'K.-o. der Nationen (2 Damen + 2 Herren)' : D.parallel ? 'Qualifikation + K.-o. (Top 16)' : D.runDiscs ? '2 (Super-G + Slalom)' : D.runs;
@@ -5973,7 +5995,7 @@ function viewTeam(){
   const staff = STAFF.map(s => {
     const lv = state.staff[s.id] || 0;
     return `<div class="mat"><div class="ic">${s.icon}</div><div><div class="row"><b>${s.name}</b> ${pips(lv, 3)} <span class="small muted">Stufe ${lv}/3${lv ? ` · ${fmtMoney(staffSalary(lv))}/Rennen` : ''}</span></div><div class="small muted">${s.desc}</div></div>
-      <div class="row" style="justify-content:flex-end">${lv ? `<button class="btn small" data-act="staffDown" data-id="${s.id}" title="Eine Stufe zurück – spart Gehalt">Reduzieren</button>` : ''}${lv >= 3 ? '<span class="chip ok">Maximal</span>' : `<button class="btn small primary" data-act="staff" data-id="${s.id}" ${state.budget < staffCost(lv) ? 'disabled' : ''}>${lv ? 'Aufwerten' : 'Einstellen'} ${fmtMoney(staffCost(lv))}</button>`}</div></div>`;
+      <div class="row" style="justify-content:flex-end">${lv >= 3 ? '<span class="chip ok">Maximal</span>' : `<button class="btn small primary" data-act="staff" data-id="${s.id}" ${state.budget < staffCost(lv) ? 'disabled' : ''}>${lv ? 'Aufwerten' : 'Einstellen'} ${fmtMoney(staffCost(lv))}</button>`}${lv ? `<button class="btn small" data-act="staffDown" data-id="${s.id}" title="Eine Stufe zurück – spart Gehalt">Reduzieren</button>` : ''}</div></div>`;
   }).join('');
   const staffCard = `<div class="card" style="margin-bottom:16px"><h3>Betreuerteam</h3><div class="staffgrid">${staff}</div></div>`;
   if(!tm.length) return staffCard + `<div class="card empty">Noch keine Fahrer im Team.<br><br><button class="btn primary" data-act="tab" data-tab="market">Zum Transfermarkt</button></div>`;
@@ -7816,14 +7838,20 @@ const ACTIONS = {
   menuAuto3d:   () => { state.auto3d = state.auto3d === false; save(); showModal(menuHTML()); },
   menuGfx:      () => { state.r3gl = state.r3gl === false; save(); showModal(menuHTML()); },
 };
+// Diese Aktionen ändern den Spielstand: ein zweiter Tipp kurz danach (Doppel-Tipp) wird ignoriert,
+// sonst träfe er den Knopf, der nach dem Neuzeichnen an derselben Stelle steht (nächster Fahrer, nächste Stufe …)
+const COMMIT = new Set(['hire','release','renew','buy','sellMat','staff','staffDown','scout','trDo','startRace','next','chooseSponsor','poach','lastChance','newGameNow','luSave']);
+let lockUntil = 0;
 document.addEventListener('click', e => {
   if(tipLong){ tipLong = false; e.preventDefault(); return; }   // Klick nach langem Drücken (Info-Text) ignorieren
+  if(e.timeStamp < lockUntil){ e.preventDefault(); return; }
   if(e.target.id === 'modal'){ closeModal(); return; }
   if(TOUCH && !e.target.closest('[data-act], a, input, select, textarea, label')){
     const t = e.target.closest('[title]'); if(t){ showTip(t); return; }
   }
   const el = e.target.closest('[data-act]');
   if(!el || el.disabled) return;
+  if(COMMIT.has(el.dataset.act)) lockUntil = e.timeStamp + 450;
   const fn = ACTIONS[el.dataset.act];
   if(fn) fn(el.dataset, el);
 });
@@ -7932,7 +7960,7 @@ window.addEventListener('scroll', hideTip, { passive:true });
 
 // ------------------------------------------------------------------ Start
 if(load()){ reindex(); if(state.phase === 'seasonEnd' && !state.pending.length) setTimeout(() => showModal(seasonSummaryHTML()), 50); }
-else { newGame(); ui.welcome = true; }   // allererster Start: kurze Einführung vor der Sponsorwahl
+else { newGame(); ui.welcome = !ui.loadFailed; if(ui.loadFailed) setTimeout(() => toast('Der gespeicherte Spielstand war beschädigt – eine Kopie wurde aufgehoben, es beginnt ein neues Spiel.', 'bad'), 200); }   // allererster Start: kurze Einführung vor der Sponsorwahl
 render();
 setTimeout(() => { if(ui.welcome) showModal(welcomeHTML()); else showPending(); }, 60);   // offene Entscheidungen (Sponsor, Verträge …) direkt anbieten
 </script>
